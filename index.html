@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sliding Puzzle</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <style>
+        body {
+            background-color: #f0f0f0;
+            margin: 0;
+            height: 100vh;
+            overflow: hidden; /* Evita rolagem */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #puzzle-container {
+            display: flex;
+            flex-wrap: wrap;
+            width: 90vmin; /* 90% da largura mínima da viewport */
+            height: 90vmin; /* 90% da altura mínima da viewport */
+            margin: 0;
+        }
+
+        .tile {
+            width: 33.33%;
+            height: 33.33%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border: 1px solid #ccc;
+            font-size: 24px;
+            cursor: pointer;
+            user-select: none;
+            background-color: #fff;
+            font-weight: bold;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        .empty {
+            background-color: transparent;
+            cursor: default;
+        }
+
+        .btn-primary {
+            background-color: #3498db;
+            border-color: #3498db;
+        }
+
+        .btn-primary:hover {
+            background-color: #2980b9;
+            border-color: #2980b9;
+        }
+
+        .timer {
+            font-size: 18px;
+            font-weight: bold;
+            position: absolute;
+            top: 10px;
+            right: 10px;
+        }
+
+        .controls {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div id="puzzle-container"></div>
+    <div class="controls">
+        <button id="shuffle-button" class="btn btn-primary"><i class="fas fa-random"></i> Embaralhar</button>
+    </div>
+    <div id="timer" class="timer">05:00</div>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const puzzleContainer = document.getElementById('puzzle-container');
+            const shuffleButton = document.getElementById('shuffle-button');
+            const timerDisplay = document.getElementById('timer');
+            let tiles = [];
+            let timer;
+            let timeLeft = 300; // 5 minutos em segundos
+
+            function initPuzzle() {
+                tiles = [...Array(9).keys()].map(i => i + 1);
+                tiles[tiles.length - 1] = null; // last tile is empty
+                renderTiles();
+                startTimer();
+            }
+
+            function renderTiles() {
+                puzzleContainer.innerHTML = '';
+                tiles.forEach((tile, index) => {
+                    const tileElement = document.createElement('div');
+                    tileElement.className = 'tile';
+                    if (tile !== null) {
+                        tileElement.textContent = tile;
+                    } else {
+                        tileElement.classList.add('empty');
+                    }
+                    tileElement.addEventListener('click', () => moveTile(index));
+                    puzzleContainer.appendChild(tileElement);
+                });
+            }
+
+            function moveTile(index) {
+                const emptyIndex = tiles.indexOf(null);
+                const validMoves = [emptyIndex - 1, emptyIndex + 1, emptyIndex - 3, emptyIndex + 3];
+
+                if (validMoves.includes(index) && (Math.abs(emptyIndex % 3 - index % 3) <= 1)) {
+                    [tiles[emptyIndex], tiles[index]] = [tiles[index], tiles[emptyIndex]];
+                    renderTiles();
+                    checkWin();
+                }
+            }
+
+            function shuffleTiles() {
+                tiles = tiles
+                    .filter(tile => tile !== null)
+                    .sort(() => Math.random() - 0.5)
+                    .concat([null]);
+                renderTiles();
+                resetTimer(); // Resetar o timer após embaralhar
+            }
+
+            function checkWin() {
+                if (tiles.slice(0, -1).every((tile, index) => tile === index + 1)) {
+                    Swal.fire('Parabéns!', 'Você completou o quebra-cabeça!', 'success');
+                    clearInterval(timer);
+                }
+            }
+
+            function startTimer() {
+                timer = setInterval(() => {
+                    timeLeft--;
+                    const minutes = Math.floor(timeLeft / 60);
+                    const seconds = timeLeft % 60;
+                    timerDisplay.textContent = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+
+                    if (timeLeft <= 0) {
+                        clearInterval(timer);
+                        Swal.fire({
+                            title: 'Tempo esgotado!',
+                            text: 'O tempo acabou. Embaralhando o quebra-cabeça.',
+                            icon: 'warning'
+                        }).then(() => {
+                            shuffleTiles();
+                        });
+                    }
+                }, 1000);
+            }
+
+            function resetTimer() {
+                clearInterval(timer);
+                timeLeft = 300; // Resetar o timer para 5 minutos
+                startTimer(); // Reiniciar o timer
+            }
+
+            shuffleButton.addEventListener('click', shuffleTiles);
+
+            initPuzzle();
+        });
+    </script>
+</body>
+</html>
